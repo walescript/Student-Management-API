@@ -16,7 +16,8 @@ user_model = auth_namespace.model(
         'id': fields.Integer(description="User ID"),
         'username':  fields.String(required=True, description="Username"),
         'email': fields.String(required=True, description="User's Email"),
-        'password_hash': fields.String(required=True, description="User's Password"),  
+        'password_hash': fields.String(required=True, description="User's Password"),
+        'user_type': fields.String(required=True, description="Type of User")
     }
 )
 
@@ -49,12 +50,18 @@ class Login(Resource):
         """
             Generate JWT Token
         """
-        data = auth_namespace.payload
+
+        print(request.data)
+
+        data = request.json
+
+        # print(data)
 
         email = data['email']
         password = data['password']
 
         user = User.query.filter_by(email=email).first()
+
 
         if (user is not None) and check_password_hash(user.password_hash, password):
             access_token = create_access_token(identity=user.id)

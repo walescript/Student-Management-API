@@ -21,6 +21,7 @@ admin_model = admin_namespace.model(
     'username': fields.String(required=True, description='Admin username'),
     'email': fields.String(required=True, description='Admin email'),
     'name': fields.String(required=True, description='Admin name'),
+    'user_type': fields.String(required=True, description="Type of User")
 })
 
 @admin_namespace.route('')
@@ -65,7 +66,8 @@ class AdminRegistration(Resource):
             username = data['username'],
             email = data['email'],
             password_hash = generate_password_hash(data['password']),
-            name = data['name']
+            name = data['name'],
+            user_type = 'admin'
         )
 
         new_admin.save()
@@ -75,5 +77,79 @@ class AdminRegistration(Resource):
         admin_resp['username'] = new_admin.username
         admin_resp['email'] = new_admin.email
         admin_resp['name'] = new_admin.name
+        admin_resp['user_type'] = new_admin.user_type
+
 
         return admin_resp, HTTPStatus.CREATED
+
+@admin_namespace.route('/<int:admin_id>')
+class GetUpdateDeleteAdmins(Resource):
+    
+    @admin_namespace.marshal_with(admin_model)
+    @admin_namespace.doc(
+        description = "Retrieve an Admin's Details by ID - Admins Only",
+        params = {
+            'admin_id': "The Admin's ID"
+        }
+    )
+    # @admin_required()
+    def get(self, admin_id):
+        """
+            Retrieve an Admin's Details by ID - Admins Only
+        """
+        admin = Admin.get_by_id(admin_id)
+        
+        return admin, HTTPStatus.OK
+    
+    @admin_namespace.expect(admin_signup_model)
+    @admin_namespace.doc(
+        description = "Update an Admin's Details by ID - Admins Only",
+        params = {
+            'admin_id': "The Admin's ID"
+        }
+    )
+    # @admin_required()
+    def put(self, admin_id):
+        """
+            Update an Admin's Details by ID - Admins Only
+        """
+        admin = Admin.get_by_id(admin_id)
+        active_admin = get_jwt_identity()
+        if active_admin != admin_id:
+            return {"message": "Specific Admin Only"}, HTTPStatus.FORBIDDEN
+
+        data = admin_namespace.payload
+
+        admin.username = data['username']
+        admin.email = data['email']
+        admin.password_hash = generate_password_hash(data['password'])
+        admin.name = data['name']
+        
+
+        admin.update()
+
+        admin_resp = {}
+        admin_resp['id'] = admin.id
+        admin_resp['username'] = admin.username
+        admin_resp['name'] = admin.name
+        admin_resp['email'] = admin.email
+        admin_resp['user_type'] = admin.user_type
+
+        return admin_resp, HTTPStatus.OK
+    
+    @admin_namespace.doc(
+        description = "Delete an Admin by ID - Admins Only",
+        params = {
+            'admin_id': "The Admin's ID"
+        }
+    )
+    # @admin_required()
+    def delete(self, admin_id):
+        """
+            Delete an Admin by ID - Admins Only
+        """
+        admin = Admin.get_by_id(admin_id)
+
+        admin.delete()
+
+        return {"message": "Admin Successfully Deleted"}, HTTPStatus.OK

@@ -2,6 +2,7 @@ from flask_restx import Namespace, Resource, fields
 from flask import Flask, jsonify, request
 from ..models.views import User, Student, Course, Grade, StudentCourse
 from ..utils import db, get_letter_grade, convert_grade_to_gpa
+from ..utils.decorators import admin_required
 from werkzeug.security import generate_password_hash
 from http import HTTPStatus
 from flask_jwt_extended import jwt_required, get_jwt, get_jwt_identity
@@ -11,7 +12,8 @@ student_namespace = Namespace('students', description='namespace for students')
 
 student_signup_model = student_namespace.model(
     'StudentSignup', {
-        'name': fields.String(required=True, description="Student's First Name"),
+        'name': fields.String(required=True, description="Student's Name"),
+        'username': fields.String(required=True, description="Student's Username"),
         'email': fields.String(required=True, description="Student's Email"),
         'password': fields.String(required=True, description="Student's Temporary Password")
     }
@@ -23,6 +25,7 @@ student_model = student_namespace.model(
     'username': fields.String(required=True, description='Student username'),
     'email': fields.String(required=True, description='Student email'),
     'password': fields.String(required=True, description='Student password'),
+    'user_type': fields.String(required=True, description="Type of User")
 })
 
 grade_model = student_namespace.model(
@@ -48,6 +51,7 @@ class GetAllStudents(Resource):
         description = "Retrieve All Students - Admins Only"
     )
 
+    @admin_required()
     def get(self):
         """
             Retrieve All Students - Admins Only
@@ -59,6 +63,7 @@ class GetAllStudents(Resource):
 @student_namespace.route('/register')
 class StudentRegistration(Resource):
     @student_namespace.expect(student_signup_model)
+    @admin_required()
     def post(self):
         """
             Register a Student - Admins Only
@@ -73,8 +78,10 @@ class StudentRegistration(Resource):
         # Register new student
         new_student = Student(
             name = data['name'],
+            username = data['username'],
             email = data['email'],
-            password_hash = generate_password_hash(data['password'])
+            password_hash = generate_password_hash(data['password']),
+            user_type = 'student'
         )
 
         new_student.save()
@@ -83,6 +90,9 @@ class StudentRegistration(Resource):
         student_resp['id'] = new_student.id
         student_resp['email'] = new_student.email
         student_resp['name'] = new_student.name
+        student_resp['username'] = new_student.username
+        student_resp['user_type'] = new_student.user_type
+        student_resp['password_hash'] = new_student.password_hash
 
         return student_resp, HTTPStatus.CREATED
 
@@ -94,6 +104,7 @@ class GetUpdateDeleteStudents(Resource):
         params = {
             'student_id': "The Student's ID"
         })
+    @jwt_required()
     def get(self, id):
         """
             Retrieve a Student's Details by ID - Admins or Specific Student Only
@@ -107,6 +118,8 @@ class GetUpdateDeleteStudents(Resource):
             student_resp['username'] = student.username
             student_resp['email'] = student.email
             student_resp['name'] = student.name
+            student_resp['user_type'] = student.user_type
+            student_resp['password_hash'] = new_student.password_hash
 
             return student_resp, HTTPStatus.OK
         
@@ -121,7 +134,7 @@ class GetUpdateDeleteStudents(Resource):
             'student_id': "The Student's ID"
         }
     )
-   
+    @jwt_required()
     def put(self, id):
         """
             Update a Student's Details by ID - Admins or Specific Student Only
@@ -133,7 +146,7 @@ class GetUpdateDeleteStudents(Resource):
             data = student_namespace.payload
 
             student.name = data['name']
-            # student.username = data['username']
+            student.username = data['username']
             student.email = data['email']
             student.password_hash = generate_password_hash(data['password'])
 
@@ -144,6 +157,8 @@ class GetUpdateDeleteStudents(Resource):
             student_resp['username'] = student.username
             student_resp['email'] = student.email
             student_resp['name'] = student.name
+            student_resp['user_type'] = student.user_type
+            student_resp['password_hash'] = new_student.password_hash
 
             return student_resp, HTTPStatus.OK
 
@@ -157,6 +172,7 @@ class GetUpdateDeleteStudents(Resource):
         }
     )
 
+    @admin_required()
     def delete(self, id):
         """
             Delete a Student by ID - Admins Only
@@ -177,7 +193,7 @@ class GetStudentCourses(Resource):
             'student_id': "The Student's ID"
         }
     )
-    # @jwt_required()
+    @jwt_required()
     def get(self, id):
         """
             Retrieve a Student's Courses - Admins or Specific Student Only
@@ -209,7 +225,7 @@ class GetAddUpdateGrades(Resource):
             'student_id': "The Student's ID"
         }
     )
-    # @jwt_required()
+    @jwt_required()
     def get(self, id):
         """
             Retrieve a Student's Grades - Admins or Specific Student Only
@@ -253,8 +269,7 @@ class GetAddUpdateGrades(Resource):
             'student_id': "The Student's ID"
         }
     )
-    # @admin_required()
-
+    @admin_required()
     def post(self, id):
         """
         Upload a Student's Grade in a Course - Admins Only
@@ -307,7 +322,7 @@ class UpdateDeleteGrade(Resource):
             'grade_id': "The Grade's ID"
         }
     )
-    # @admin_required()
+    @admin_required()
     def put(self, grade_id):
         """
             Update a Grade - Admins Only
@@ -336,7 +351,7 @@ class UpdateDeleteGrade(Resource):
             'grade_id': "The Grade's ID"
         }
     )
-    # @admin_required()
+    @admin_required()
     def delete(self, grade_id):
         """
             Delete a Grade - Admins Only
@@ -357,7 +372,7 @@ class GetStudentCGPA(Resource):
             'student_id': "The Student's ID"
         }
     )
-    # @jwt_required()
+    @jwt_required()
     def get(self, id):
         """
             Calculate a Student's CGPA - Admins or Specific Student Only

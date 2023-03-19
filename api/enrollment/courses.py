@@ -3,6 +3,7 @@ from flask import Flask, jsonify, request
 from api.enrollment.students import Student, StudentCourse
 from ..models.views import Course, Student, StudentCourse
 from ..utils import db
+from ..utils.decorators import admin_required
 from http import HTTPStatus, HTTPMethod
 
 
@@ -42,7 +43,8 @@ class GetCreateCourses(Resource):
     @course_namespace.doc(
         description='Register a Course - Admins Only'
     )
-    
+
+    @admin_required()
     def post(self):
         """
             Register a Course - Admins Only
@@ -80,7 +82,7 @@ class GetUpdateDeleteCourse(Resource):
             'course_id': "The Course's ID"
         }
     )
-    # @admin_required()
+    @admin_required()
     def get(self, course_id):
         """
             Retrieve a Course's Details by ID - Admins Only
@@ -97,7 +99,7 @@ class GetUpdateDeleteCourse(Resource):
             'course_id': "The Course's ID"
         }
     )
-    # @admin_required()
+    @admin_required()
     def put(self, course_id):
         """
             Update a Course's Details by ID - Admins Only
@@ -119,7 +121,7 @@ class GetUpdateDeleteCourse(Resource):
             'course_id': "The Course's ID"
         }
     )
-    # @admin_required()
+    @admin_required()
     def delete(self, course_id):
         """
             Delete a Course by ID - Admins Only
@@ -140,7 +142,7 @@ class GetAllCourseStudents(Resource):
             'course_id': "The Course's ID"
         }
     )
-    # @admin_required()
+    @admin_required()
     def get(self, course_id):
         """
             Get all Students Enrolled for a Course - Admins Only
@@ -168,7 +170,7 @@ class AddDropCourseStudent(Resource):
             'course_id': "The Course's ID"
         }
     )
-    # @admin_required()
+    @admin_required()
     def post(self, course_id, student_id):
         """
             Enroll a Student for a Course - Admins Only
@@ -207,7 +209,7 @@ class AddDropCourseStudent(Resource):
             'student_id': "The Student's ID"
         }
     )
-    # @admin_required()
+    @admin_required()
     def delete(self, course_id, student_id):
         """
             Remove a Student from a Course - Admins Only
@@ -232,152 +234,3 @@ class AddDropCourseStudent(Resource):
         student_in_course.delete()
 
         return {"message": f"{student.name} has been successfully removed from {course.name}"}, HTTPStatus.OK
-
-# @course_namespace.route('')
-# class GetCreateCourses(Resource):
-
-#     @course_namespace.marshal_with(course_model)
-#     @course_namespace.doc(
-#         description='Get all courses'
-#     )
-    
-#     def get(self):
-#         """
-#             Get All Courses
-#         """
-#         courses = Course.query.all()
-
-#         return courses, HTTPStatus.OK
-    
-#     @course_namespace.expect(course_model)
-#     @course_namespace.marshal_with(course_model)
-#     @course_namespace.doc(
-#         description='Register a course'
-#     )
-    
-
-#     def post(self):
-#         """
-#             Register a Course - Admins Only
-#         """
-#         data = course_namespace.payload
-
-#         # Check if course already exists
-#         course = Course.query.filter_by(name=data['name']).first()
-#         if course:
-#             return {"message": "Course Already Exists"}, HTTPStatus.CONFLICT
-
-#         # Register new course
-#         new_course = Course(
-#             name = data['name'],
-#             teacher = data['teacher']
-#         )
-
-#         new_course.save()
-
-#         db.session.add(new_course)
-#         db.session.commit()
-
-#         return new_course, HTTPStatus.CREATED
-
-# @course_namespace.route('/<int:course_id>')
-# class GetUpdateDeleteCourse(Resource):
-    
-#     @course_namespace.marshal_with(course_model)
-#     @course_namespace.doc(
-#         description='Get a course by ID'
-#     )
-    
-#     def get(self, course_id):
-#         """
-#             Retrieve a Course's Details by ID - Admins Only
-#         """
-#         course = Course.get_by_id(course_id)
-        
-#         return course, HTTPStatus.OK
-    
-#     @course_namespace.expect(course_model)
-#     @course_namespace.marshal_with(course_model)
-#     @course_namespace.doc(
-#         description = "Update a Course's Details by ID - Admins Only",
-#         params = {
-#             'course_id': "The Course's ID"
-#         }
-#     )
-#     def put(self, course_id):
-#         """
-#             Update a Course
-#         """
-#         course = Course.query.get_or_404(course_id)
-#         data = course_namespace.payload
-
-#         course.name = data.get('name', course.name)
-#         course.teacher = data.get('teacher', course.teacher)
-#         course.credit_hours = data.get('credit_hours', course.credit_hours)
-#         course.user_id = data.get('user_id', course.user_id)
-
-#         course.save()
-
-#         return course, HTTPStatus.OK
-    
-#     @course_namespace.doc(
-#         description = "Delete a Course by ID - Admins Only",
-#         params = {
-#             'course_id': "The Course's ID"
-#         }
-#     )
-
-#     def delete(self, course_id):
-#         """
-#             Delete a Course by ID - Admins Only
-#         """
-#         course = Course.query.get_or_404(course_id)
-#         db.session.delete(course)
-#         db.session.commit()
-#         return {"message": "Course Successfully Deleted"}, HTTPStatus.OK
-
-# @course_namespace.route('/<int:course_id>/students')
-# class GetCourseStudents(Resource):
-
-#     @course_namespace.doc(
-#         description='Get list of students enrolled in a course'
-#     )
-#     def get(self, course_id):
-#         course = Course.query.get_or_404(course_id)
-#         students = course.students
-#         student_list = [{'id': student.id, 'name': student.name, 'email': student.email} for student in students]
-#         return jsonify({'students': student_list})
-
-# @course_namespace.route('/<int:course_id>/students/<int:student_id>')
-# class EnrollStudent(Resource):
-
-#     @course_namespace.doc(
-#         description='Enroll student to a course'
-#     )
-#     def post(self, course_id, student_id):
-#         course = Course.query.get_or_404(course_id)
-#         student = Student.query.get_or_404(student_id)
-
-#         # check if the student is already registered for the course
-#         if student in course.students:
-#             return jsonify({'message': f'Student {student.name} is already registered for course {course.name}.'}), 400
-        
-#         # add the student to the course
-#         course.students.append(student)
-#         db.session.commit()
-        
-#         return jsonify({'message': f'Student {student.name} added to course {course.name} successfully.'}), 200
-
-#     @course_namespace.doc(
-#         description='Remove student from a course'
-#     )
-#     def delete(self, course_id, student_id):
-#         course = Course.query.get_or_404(course_id)
-#         student = Student.query.get_or_404(student_id)
-            
-#         if student in course.students:
-#             course.students.remove(student)
-#             db.session.commit()
-#             return jsonify({'message': f'Student {student.name} removed from course {course.name}.'}), 200
-#         else:
-#             return jsonify({'message': f'Student {student.name} is not registered for course {course.name}.'}), 400
