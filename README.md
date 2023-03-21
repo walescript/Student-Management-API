@@ -16,8 +16,8 @@ Follow these steps to utilize this API:
 1. Launch the PythonAnywhere web app by going to https://walescript.pythonanywhere.com in your browser.
 
 2. Make a student or administrator account:
-* To create an admin account, select the '/admin/register' route then resgister an 'admin' via the selected route.
-* To create an student account, select the '/student/register' route then resgister a 'student' via the selected route.
+* To create an admin account, select the '/admin/register' route then register an 'admin' via the selected route.
+* To create an student account, select the '/student/register' route then register a 'student' via the selected route.
 3. Sign in via the '/auth/login' route to generate a JWT token. This access token should be copied without the quotation marks
 
 4. Navigate upwards to the top right corner and click 'Authorize' to enter the JWT token in the given format
@@ -35,7 +35,7 @@ Follow these steps to utilize this API:
 
 7. When these operations have been completed , navigate upwards to the top right corner and select 'Logout'
 
-In this code, comments have been put in place to allow users of the API to determine how the administrator authentication and authorization should be handled. The comments explain that the @admin_required() decorator should be uncommented after registering the first admin. This decorator ensures that only an existing admin can register a new admin account on the app.
+In the admin section of the code, comments have been put in place to allow users of the API to determine how the administrator authentication and authorization should be handled. The comments explain that the @admin_required() decorator should be uncommented after registering the first admin. This decorator ensures that only an existing admin can register a new admin account on the app.
 
 Similarly, the @admin_required() decorator is also mentioned in the comments for the get() and put() methods of the GetUpdateDeleteAdmins class, indicating that these endpoints should also only be accessible by existing admins. The comments explain how these methods can be used to retrieve, update, and delete admin accounts by ID, and that only the specific admin associated with the account should have access to these methods.
 
